@@ -7,7 +7,7 @@ import CurrencyLayerClient from '../../node_modules/currencylayer-client';
 
 
 class App extends Component {
-  
+
   constructor() {
     super();
     this.apiConf = { apiKey: 'f97a26d510e99f6b4bde901830c7fc8a', free: false };
@@ -24,12 +24,12 @@ class App extends Component {
       to: '',
       format: 1,
       amount: 1,
-      isCollapsed: false
+      isCollapsed: false,
+      history: {}
     };
-    this.history = {};
-    this.history = {};
-    this.history.dates = this.getLastMonth();
-    this.history.values = {};
+    
+    this.state.history.dates = this.getLastMonth();
+    this.state.history.values = {};
 
     this.onInputValueChanged = this.onInputValueChanged.bind(this);
     this.onRadioInputChange = this.onRadioInputChange.bind(this);
@@ -40,7 +40,7 @@ class App extends Component {
   }
 
   /**
-  * 
+  * Fetches real time rates
   */
   fetchLiveRates(newCurrencies) {
 
@@ -63,17 +63,27 @@ class App extends Component {
 
   }
 
+  /**
+   * fetches rates from predefined past dates
+   * @param {Object} newCurrencies 
+   */
   fetchHistoryRates(newCurrencies) {
 
     let currencies = Object.keys(newCurrencies).join(',');
-    let month = this.history.dates;
-    let values = this.history.values;
+    let month = this.state.history.dates;
+    let values = this.state.history.values;
 
     month.map((date) => {
       this.client.historical({ date: date, currencies: currencies, source: this.state.from }).then((response) => {
         values[response.date] = response.quotes;
 
-        if(Object.keys(values).length === 30) {
+        if(Object.keys(values).length === 6) {
+          this.setState({
+            history:{
+              dates: month,
+              values: values
+            }
+          });
           console.log(values)
         }
       });
@@ -81,10 +91,16 @@ class App extends Component {
 
   }
 
+  /**
+   * onReady
+   */
   componentDidMount() {
     this.fetchLiveRates(this.state.currencies);
   }
 
+  /**
+   * onUpdate
+   */
   componentDidUpdate(prevProps, prevState) {
 
     var shouldFetchRates = false;
@@ -104,9 +120,18 @@ class App extends Component {
 
     if (shouldFetchRates === true) {
       this.fetchLiveRates(this.state.currencies);
+      this.fetchHistoryRates(this.state.currencies);
     }
   }
 
+  /**
+   * [OBSOLETE] There was no need for such functionality. 
+   * I was over the limit of free requests with currency-layer by the first evening.
+   * Ended up using the paid version which includes this feature.
+   * @param {*} currencyRates 
+   * @param {*} desiredCurrency 
+   * @param {*} amount 
+   */
   convertCurrency(currencyRates, desiredCurrency, amount) {
     let currentCurrency = "USD";
     let currentRate = currencyRates[currentCurrency];
@@ -118,24 +143,40 @@ class App extends Component {
     return convertedAmount;
   }
 
+  /**
+   * event handler for input
+   * @param {*} event 
+   */
   onInputValueChanged(event) {
     this.setState({
       amount: event.currentTarget.value
     });
   }
 
+  /**
+   * event handler for radio buttons
+   * @param {*} event 
+   */
   onRadioInputChange(event) {
     this.setState({
       from: event.currentTarget.value
     });
   }
 
+  /**
+   * event handler for show/hide switch
+   * @param {*} event 
+   */
   onCheckedChange(event) {
     this.setState({
       isCollapsed: event.currentTarget.checked
     });
   }
 
+  /**
+   * formats the date 
+   * @param {*} date 
+   */
   formatDate(date){
     var dd = date.getDate();
     var mm = date.getMonth()+1;
@@ -146,6 +187,9 @@ class App extends Component {
     return date
  }
 
+ /**
+  * returns the last 30 days in an array of strings
+  */
   getLastMonth() {
     var result = [];
     for (var i=0; i<30; i = i+5) {
@@ -172,7 +216,7 @@ class App extends Component {
         <Header />
         <div className="main-content-wrapper">
         <Block quotes={quotes} currencies={currencies} amount={amount} from={from} onRadioInputChange={onRadioInputChange} onInputValueChanged={onInputValueChanged} />
-        <Block values={this.history.values} dates={this.history.dates} from={from} onInputValueChanged={onInputValueChanged} onCheckedChange={onCheckedChange} isCollapsed={isCollapsed} isHistory={true} />
+        <Block values={this.state.history.values} dates={this.state.history.dates} from={from} onInputValueChanged={onInputValueChanged} onCheckedChange={onCheckedChange} isCollapsed={isCollapsed} isHistory={true} />
         </div>
         <Footer />
       </div>
