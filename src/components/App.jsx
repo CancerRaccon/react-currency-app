@@ -10,7 +10,7 @@ class App extends Component {
 
   constructor() {
     super();
-    this.apiConf = { apiKey: 'f97a26d510e99f6b4bde901830c7fc8a', free: false };
+    this.apiConf = { apiKey: 'place_your_key_here', free: false };
     this.client = new CurrencyLayerClient(this.apiConf);
     this.state = {
       source: '',
